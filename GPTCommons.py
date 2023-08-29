@@ -5,7 +5,17 @@ import sys
 import openai
 
 class GPTCommons:
+    """
+    A utility class for common operations with the GPT model.
+    """
     def __init__(self):
+        """
+        Initializes GPTCommons with predefined constants.
+
+        Constants:
+        - SPECIAL_CHARACTERS (str): Punctuation and special characters used for text cleaning.
+        - PATTERN (re.Pattern): Compiled regular expression pattern for cleaning text.
+        """
         self.SPECIAL_CHARACTERS = string.punctuation + "“”‘’"
         self.PATTERN = re.compile(r'[\n\s]+')    
 
