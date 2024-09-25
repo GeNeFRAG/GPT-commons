@@ -19,7 +19,7 @@ class GPTCommons:
         self.SPECIAL_CHARACTERS = string.punctuation + "“”‘’"
         self.PATTERN = re.compile(r'[\n\s]+')    
 
-    def clean_text(self, text):
+    def clean_text(self, text) -> str:
         """
         Cleans a given text by replacing line breaks, consecutive whitespace, and handling special characters.
 
@@ -42,30 +42,7 @@ class GPTCommons:
         
         return text
 
-    def clean_text(self, text):
-        """
-        Cleans a given text by replacing line breaks, consecutive whitespace, and handling special characters.
-
-        Args:
-        text (str): The input text to be cleaned.
-
-        Returns:
-        str: The cleaned text.
-
-        Example:
-        >>> dirty_text = "This is a\ndirty    text!!"
-        >>> clean_text(dirty_text)
-        'This is a dirty text  '
-        """
-    # Replace line breaks and consecutive whitespace with a single space
-        text = re.sub(self.PATTERN, ' ', text).strip()
-        
-        # Handle special characters (replace with spaces or remove them)
-        text = ''.join(char if char not in self.SPECIAL_CHARACTERS else ' ' for char in text)
-        
-        return text
-
-    def get_completion(self, prompt, model, temperature=0):
+    def get_completion(self, prompt, model, temperature=0) -> str:
         """
         Retrieves a completion using the OpenAI ChatCompletion API with the specified model and parameters.
 
@@ -92,7 +69,7 @@ class GPTCommons:
         )
         return response.choices[0].message["content"]
 
-    def get_arg(self, arg_name, default=None):
+    def get_arg(self, arg_name, default=None) -> str:
         """
         Retrieves the value of a command-line argument by its name from the sys.argv list.
 
@@ -128,7 +105,7 @@ class GPTCommons:
         except (IndexError, ValueError):
             return default
 
-    def split_into_chunks(self, text, chunk_size=1000, overlap_percentage=1):
+    def split_into_chunks(self, text, chunk_size=1000, overlap_percentage=1) -> list[str]:
         """
         Splits a given text into smaller chunks with a specified chunk size and overlap percentage.
 
