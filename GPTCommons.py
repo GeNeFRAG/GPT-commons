@@ -1,23 +1,57 @@
 import re
 import string
 import sys
+import tiktoken
 
-import openai
+from openai import OpenAI
 
 class GPTCommons:
     """
     A utility class for common operations with the GPT model.
     """
-    def __init__(self):
+    def __init__(self, api_key):
         """
-        Initializes GPTCommons with predefined constants.
+        Initializes GPTCommons with predefined constants and sets the API key.
+
+        Args:
+        api_key (str): The API key for authenticating with the OpenAI API.
 
         Constants:
         - SPECIAL_CHARACTERS (str): Punctuation and special characters used for text cleaning.
         - PATTERN (re.Pattern): Compiled regular expression pattern for cleaning text.
         """
         self.SPECIAL_CHARACTERS = string.punctuation + "“”‘’"
-        self.PATTERN = re.compile(r'[\n\s]+')    
+        self.PATTERN = re.compile(r'[\n\s]+')
+        self.client = OpenAI(api_key=api_key)
+
+    def reduce_to_max_tokens(self, text, max_tokens, gpt_model) -> str:
+        """
+        Reduces the input text to a maximum number of tokens for the specified OpenAI model.
+
+        Args:
+        text (str): The input text to be reduced.
+        max_tokens (int): The maximum number of tokens allowed.
+        gptmodel (str): The OpenAI model to use for tokenization (default is "gpt-3.5-turbo").
+
+        Returns:
+        str: The reduced text.
+        """
+        if not isinstance(max_tokens, int):
+            raise ValueError("max_tokens must be an integer.")
+
+        # Initialize the tokenizer for the specified model
+        tokenizer = tiktoken.encoding_for_model(gpt_model)
+
+        # Tokenize the input text
+        tokens = tokenizer.encode(text)
+
+        # Truncate the tokens to the maximum allowed number
+        truncated_tokens = tokens[:max_tokens]
+
+        # Convert the tokens back to text
+        reduced_text = tokenizer.decode(truncated_tokens)
+
+        return reduced_text
 
     def clean_text(self, text) -> str:
         """
@@ -34,41 +68,44 @@ class GPTCommons:
         >>> clean_text(dirty_text)
         'This is a dirty text  '
         """
-    # Replace line breaks and consecutive whitespace with a single space
+        # Replace line breaks and consecutive whitespace with a single space
         text = re.sub(self.PATTERN, ' ', text).strip()
-        
+
         # Handle special characters (replace with spaces or remove them)
         text = ''.join(char if char not in self.SPECIAL_CHARACTERS else ' ' for char in text)
-        
+
         return text
 
-    def get_completion(self, prompt, model, temperature=0) -> str:
+    def get_chat_completion(self, prompt, model, temperature=0) -> str:
         """
         Retrieves a completion using the OpenAI ChatCompletion API with the specified model and parameters.
 
         Args:
         prompt (str): The user's input or prompt for generating the completion.
-        model (str): The OpenAI model identifier (e.g., "gpt-3.5-turbo").
-        temperature (float, optional): The degree of randomness in the model's output (default is 0).
-                                    A higher value makes the output more random, while a lower value makes it more deterministic.
+        model (str): The model to use for generating the completion.
+        temperature (float): The temperature to use for generating the completion.
 
         Returns:
-        str: The generated completion text.
-
-        Example:
-        >>> user_prompt = "Translate the following English text to French: 'Hello, how are you?'"
-        >>> model_id = "gpt-3.5-turbo"
-        >>> get_completion(user_prompt, model_id, temperature=0.7)
-        'Bonjour, comment ça va ?'
+        str: The generated completion.
         """
-        messages = [{"role": "user", "content": prompt}]
-        response = openai.ChatCompletion.create(
+        """
+        response = self.client.chat.completions.create(
             model=model,
-            messages=messages,
-            temperature=temperature, # this is the degree of randomness of the model's output
-        )
-        return response.choices[0].message["content"]
-
+            prompt=prompt,
+            temperature=temperature)
+        """
+        response = self.client.chat.completions.create(
+                messages=[
+                        {
+                            "role": "system",
+                            "content": prompt,
+                         }
+                        ],
+                model=model,
+                temperature=temperature
+                )
+        return response.choices[0].message.content.strip()
+    
     def get_arg(self, arg_name, default=None) -> str:
         """
         Retrieves the value of a command-line argument by its name from the sys.argv list.
