@@ -174,35 +174,37 @@ class GPTCommons:
                 )
         return response.choices[0].message.content.strip()
     
-    def get_arg(self, arg_name, default=None) -> str:
+    def get_arg(self, arg_name, arg_descriptions, default=None) -> str:
         """
         Retrieves the value of a command-line argument by its name from the sys.argv list.
 
         Args:
         arg_name (str): The name of the command-line argument to retrieve.
+        arg_descriptions (dict): A dictionary containing argument names as keys and their descriptions as values.
         default: The default value to return if the argument is not found (default is None).
 
         Returns:
         str or default: The value of the specified command-line argument or the default value if not found.
 
+        If '--help' is present in the command-line arguments, it prints the usage message along with descriptions of all arguments and exits the program.
+
         Example:
         >>> # Assuming the command-line arguments are ['--lang', 'English', '--url', 'example.com']
-        >>> get_arg('--lang', 'Spanish')
+        >>> get_arg('--lang', {'--lang': 'Language (default: English)', '--url': 'PDF URL'}, 'Spanish')
         'English'
-        >>> get_arg('--url', 'localhost')
+        >>> get_arg('--url', {'--lang': 'Language (default: English)', '--url': 'PDF URL'}, 'localhost')
         'example.com'
-        >>> get_arg('--port', 8080)
+        >>> get_arg('--port', {'--lang': 'Language (default: English)', '--url': 'PDF URL'}, 8080)
         8080
         """
         if "--help" in sys.argv:
-            print("Usage: python PD_AI_Sum.py [--help] [--lang] [--url] [--ofile]")
-            print("Arguments:")
-            print("\t--help\t\tHelp\t\tNone")
-            print("\t--lang\t\tLanguage\tEnglish")
-            print("\t--url\t\tPDF URL\t\tNone")
-            print("\t--ofile\t\tOutpout file\trandom_paper.pdf")
-            # Add more argument descriptions here as needed
+            script_name = sys.argv[0]
+            print(f"Usage: python {script_name} [options]")
+            print("Options:")
+            for arg, desc in arg_descriptions.items():
+                print(f"\t{arg}\t\t{desc}")
             sys.exit(0)
+
         try:
             arg_index = sys.argv.index(arg_name)
             arg_value = sys.argv[arg_index + 1]
