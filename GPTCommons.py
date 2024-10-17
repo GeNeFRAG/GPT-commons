@@ -2,6 +2,7 @@ import re
 import string
 import sys
 import tiktoken
+import tomli
 
 from openai import OpenAI
 
@@ -9,12 +10,15 @@ class GPTCommons:
     """
     A utility class for common operations with the GPT model.
     """
-    def __init__(self, api_key):
+    def __init__(self, api_key, gptmodel, maxtokens, temperature, organization):
         """
         Initializes GPTCommons with predefined constants and sets the API key.
 
         Args:
         api_key (str): The API key for authenticating with the OpenAI API.
+        gptmodel (str): The OpenAI model to use for tokenization.
+        maxtokens (int): The maximum number of tokens allowed.
+        temperature (float): The temperature to use for generating the completion.
 
         Constants:
         - SPECIAL_CHARACTERS (str): Punctuation and special characters used for text cleaning.
@@ -23,8 +27,78 @@ class GPTCommons:
         self.SPECIAL_CHARACTERS = string.punctuation + "“”‘’"
         self.PATTERN = re.compile(r'[\n\s]+')
         self.client = OpenAI(api_key=api_key)
+        self.api_key = api_key
+        self.gptmodel = gptmodel
+        self.maxtokens = maxtokens
+        self.temperature = temperature
+        self.organization = organization
 
-    def reduce_to_max_tokens(self, text, max_tokens, gpt_model) -> str:
+    @staticmethod
+    def initialize_gpt_commons(configfile):
+        # Reading out OpenAI API keys and organization
+        try:
+            with open(configfile,"rb") as f:
+                data = tomli.load(f)
+        except Exception as e:
+            print(f"Error: Unable to read openai.toml file.")
+            print(e)
+            sys.exit(1)
+
+        try:
+            api_key = data["openai"]["apikey"]
+            if not api_key:
+                raise ValueError("API key is missing or empty in the configuration.")
+        except KeyError:
+            raise KeyError("API key is mandatory and missing in the configuration.")
+
+        try:
+            gptmodel = data["openai"]["model"]
+            if not gptmodel:
+                raise ValueError("Model is missing or empty in the configuration.")
+        except KeyError:
+            raise KeyError("Model is missing in the configuration.")
+        
+        try:
+            organization = data["openai"].get("organization", None)
+        except KeyError:
+            raise KeyError("Organization is missing in the configuration.")
+
+        try:
+            maxtokens = int(data["openai"]["maxtokens"])
+        except KeyError:
+            raise KeyError("Max tokens is mandatory and missing in the configuration.")
+        except ValueError:
+            raise ValueError("Max tokens must be an integer.")
+
+        try:
+            temperature = float(data["openai"]["temperature"])
+            if not (0 <= temperature <= 1):
+                raise ValueError("Temperature must be between 0 and 1.")
+        except KeyError:
+            raise KeyError("Temperature is mandatory and missing in the configuration.")
+        except ValueError:
+            raise ValueError("Temperature must be a float between 0 and 1.")
+
+        # Initialize GPT utilities module
+        commons = GPTCommons(api_key=api_key, gptmodel=gptmodel, maxtokens=maxtokens, temperature=temperature, organization=organization)
+        return commons
+
+    def get_api_key(self) -> str:
+        return self.api_key
+
+    def get_gptmodel(self) -> str:
+        return self.gptmodel
+    
+    def get_organization(self) -> str:
+        return self.organization
+
+    def get_maxtokens(self) -> int:
+        return self.maxtokens
+
+    def get_temperature(self) -> float:
+        return self.temperature
+
+    def reduce_to_max_tokens(self, text) -> str:
         """
         Reduces the input text to a maximum number of tokens for the specified OpenAI model.
 
@@ -36,17 +110,17 @@ class GPTCommons:
         Returns:
         str: The reduced text.
         """
-        if not isinstance(max_tokens, int):
+        if not isinstance(self.get_maxtokens(), int):
             raise ValueError("max_tokens must be an integer.")
 
         # Initialize the tokenizer for the specified model
-        tokenizer = tiktoken.encoding_for_model(gpt_model)
+        tokenizer = tiktoken.encoding_for_model(self.get_gptmodel())
 
         # Tokenize the input text
         tokens = tokenizer.encode(text)
 
         # Truncate the tokens to the maximum allowed number
-        truncated_tokens = tokens[:max_tokens]
+        truncated_tokens = tokens[:self.get_maxtokens()]
 
         # Convert the tokens back to text
         reduced_text = tokenizer.decode(truncated_tokens)
@@ -76,7 +150,7 @@ class GPTCommons:
 
         return text
 
-    def get_chat_completion(self, prompt, model, temperature=0) -> str:
+    def get_chat_completion(self, prompt) -> str:
         """
         Retrieves a completion using the OpenAI ChatCompletion API with the specified model and parameters.
 
@@ -88,12 +162,6 @@ class GPTCommons:
         Returns:
         str: The generated completion.
         """
-        """
-        response = self.client.chat.completions.create(
-            model=model,
-            prompt=prompt,
-            temperature=temperature)
-        """
         response = self.client.chat.completions.create(
                 messages=[
                         {
@@ -101,8 +169,8 @@ class GPTCommons:
                             "content": prompt,
                          }
                         ],
-                model=model,
-                temperature=temperature
+                model=self.get_gptmodel(),
+                temperature=self.get_temperature()
                 )
         return response.choices[0].message.content.strip()
     
