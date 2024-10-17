@@ -9,6 +9,20 @@ from openai import OpenAI
 class GPTCommons:
     """
     A utility class for common operations with the GPT model.
+
+    This class provides various methods to interact with the GPT model, including:
+    - Generating chat completions.
+    - Handling command-line arguments dynamically.
+    - Managing model configurations such as temperature and model type.
+
+    Methods:
+    - get_chat_completion(prompt): Generates a chat completion based on the provided prompt.
+    - get_arg(arg_name, arg_descriptions, default=None): Retrieves the value of a command-line argument by its name.
+    - get_gptmodel(): Returns the current GPT model configuration.
+    - get_temperature(): Returns the current temperature setting for the model.
+
+    Usage:
+    This class can be used in different scripts to standardize interactions with the GPT model and handle common tasks efficiently.
     """
     def __init__(self, api_key, gptmodel, maxtokens, temperature, organization):
         """
@@ -35,6 +49,22 @@ class GPTCommons:
 
     @staticmethod
     def initialize_gpt_commons(configfile):
+        """
+        Initializes the GPTCommons class using configuration settings from a TOML file.
+
+        This method reads the OpenAI API key, model, organization, max tokens, and temperature from a specified TOML configuration file and initializes an instance of the GPTCommons class with these settings.
+
+        Args:
+        configfile (str): The path to the TOML configuration file containing the OpenAI settings.
+
+        Returns:
+        GPTCommons: An instance of the GPTCommons class initialized with the settings from the configuration file.
+
+        Raises:
+        KeyError: If any mandatory configuration setting is missing in the TOML file.
+        ValueError: If any configuration setting has an invalid value.
+        Exception: If there is an error reading the TOML file.
+        """
         # Reading out OpenAI API keys and organization
         try:
             with open(configfile,"rb") as f:
@@ -84,18 +114,48 @@ class GPTCommons:
         return commons
 
     def get_api_key(self) -> str:
+        """
+        Retrieves the API key for accessing the GPT model.
+
+        Returns:
+        str: The API key.
+        """
         return self.api_key
 
     def get_gptmodel(self) -> str:
+        """
+        Retrieves the current GPT model configuration.
+
+        Returns:
+        str: The GPT model configuration.
+        """
         return self.gptmodel
-    
+
     def get_organization(self) -> str:
+        """
+        Retrieves the organization identifier.
+
+        Returns:
+        str: The organization identifier.
+        """
         return self.organization
 
     def get_maxtokens(self) -> int:
+        """
+        Retrieves the maximum number of tokens allowed in a response.
+
+        Returns:
+        int: The maximum number of tokens.
+        """
         return self.maxtokens
 
     def get_temperature(self) -> float:
+        """
+        Retrieves the temperature setting for the model, which controls the randomness of the output.
+
+        Returns:
+        float: The temperature setting.
+        """
         return self.temperature
 
     def reduce_to_max_tokens(self, text) -> str:
