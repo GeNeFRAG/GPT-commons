@@ -20,6 +20,9 @@ class GPTCommons:
     - get_arg(arg_name, arg_descriptions, default=None): Retrieves the value of a command-line argument by its name.
     - get_gptmodel(): Returns the current GPT model configuration.
     - get_temperature(): Returns the current temperature setting for the model.
+    - reduce_to_max_tokens(text): Reduces the input text to a maximum number of tokens.
+    - clean_text(text): Cleans the input text by removing special characters and extra whitespace.
+    - split_into_chunks(text, chunk_size, overlap_percentage): Splits the input text into smaller chunks.
 
     Usage:
     This class can be used in different scripts to standardize interactions with the GPT model and handle common tasks efficiently.
@@ -33,10 +36,12 @@ class GPTCommons:
         gptmodel (str): The OpenAI model to use for tokenization.
         maxtokens (int): The maximum number of tokens allowed.
         temperature (float): The temperature to use for generating the completion.
+        organization (str): The organization ID for OpenAI.
 
-        Constants:
-        - SPECIAL_CHARACTERS (str): Punctuation and special characters used for text cleaning.
-        - PATTERN (re.Pattern): Compiled regular expression pattern for cleaning text.
+        Attributes:
+        SPECIAL_CHARACTERS (str): Punctuation and special characters used for text cleaning.
+        PATTERN (re.Pattern): Compiled regular expression pattern for cleaning text.
+        client (OpenAI): The OpenAI client initialized with the provided API key.
         """
         self.SPECIAL_CHARACTERS = string.punctuation + "“”‘’"
         self.PATTERN = re.compile(r'[\n\s]+')
@@ -48,7 +53,7 @@ class GPTCommons:
         self.organization = organization
 
     @staticmethod
-    def initialize_gpt_commons(configfile):
+    def initialize_gpt_commons(configfile) -> 'GPTCommons':
         """
         Initializes the GPTCommons class using configuration settings from a TOML file.
 
@@ -65,51 +70,64 @@ class GPTCommons:
         ValueError: If any configuration setting has an invalid value.
         Exception: If there is an error reading the TOML file.
         """
-        # Reading out OpenAI API keys and organization
+        # Attempt to read the OpenAI API keys and organization from the configuration file
         try:
-            with open(configfile,"rb") as f:
+            with open(configfile, "rb") as f:
                 data = tomli.load(f)
         except Exception as e:
+            # Print error message and exit if the configuration file cannot be read
             print(f"Error: Unable to read openai.toml file.")
             print(e)
             sys.exit(1)
 
         try:
+            # Extract the API key from the configuration data
             api_key = data["openai"]["apikey"]
             if not api_key:
                 raise ValueError("API key is missing or empty in the configuration.")
         except KeyError:
+            # Raise an error if the API key is missing in the configuration
             raise KeyError("API key is mandatory and missing in the configuration.")
 
         try:
+            # Extract the GPT model from the configuration data
             gptmodel = data["openai"]["model"]
             if not gptmodel:
                 raise ValueError("Model is missing or empty in the configuration.")
         except KeyError:
+            # Raise an error if the model is missing in the configuration
             raise KeyError("Model is missing in the configuration.")
         
         try:
+            # Extract the organization from the configuration data, if available
             organization = data["openai"].get("organization", None)
         except KeyError:
+            # Raise an error if the organization is missing in the configuration
             raise KeyError("Organization is missing in the configuration.")
 
         try:
+            # Extract and validate the maximum number of tokens from the configuration data
             maxtokens = int(data["openai"]["maxtokens"])
         except KeyError:
+            # Raise an error if the max tokens setting is missing in the configuration
             raise KeyError("Max tokens is mandatory and missing in the configuration.")
         except ValueError:
+            # Raise an error if the max tokens setting is not an integer
             raise ValueError("Max tokens must be an integer.")
 
         try:
+            # Extract and validate the temperature setting from the configuration data
             temperature = float(data["openai"]["temperature"])
             if not (0 <= temperature <= 1):
                 raise ValueError("Temperature must be between 0 and 1.")
         except KeyError:
+            # Raise an error if the temperature setting is missing in the configuration
             raise KeyError("Temperature is mandatory and missing in the configuration.")
         except ValueError:
+            # Raise an error if the temperature setting is not a float between 0 and 1
             raise ValueError("Temperature must be a float between 0 and 1.")
 
-        # Initialize GPT utilities module
+        # Initialize GPTCommons instance with the extracted settings
         commons = GPTCommons(api_key=api_key, gptmodel=gptmodel, maxtokens=maxtokens, temperature=temperature, organization=organization)
         return commons
 
@@ -164,8 +182,6 @@ class GPTCommons:
 
         Args:
         text (str): The input text to be reduced.
-        max_tokens (int): The maximum number of tokens allowed.
-        gptmodel (str): The OpenAI model to use for tokenization (default is "gpt-3.5-turbo").
 
         Returns:
         str: The reduced text.
@@ -216,8 +232,6 @@ class GPTCommons:
 
         Args:
         prompt (str): The user's input or prompt for generating the completion.
-        model (str): The model to use for generating the completion.
-        temperature (float): The temperature to use for generating the completion.
 
         Returns:
         str: The generated completion.
@@ -290,8 +304,8 @@ class GPTCommons:
         >>> split_into_chunks(text, chunk_size=20, overlap_percentage=0.5)
         ['This is an example ', ' example text that ne', 'text that needs to be', ' to be split into smal', ' smaller chunks.']
         """
-        #split the web content into chunks of 1000 characters
-        text = self.clean_text( text)
+        # Clean the input text
+        text = self.clean_text(text)
 
         # Calculate the number of overlapping characters
         overlap_chars = int(chunk_size * overlap_percentage)
