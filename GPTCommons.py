@@ -23,6 +23,7 @@ class GPTCommons:
     - reduce_to_max_tokens(text): Reduces the input text to a maximum number of tokens.
     - clean_text(text): Cleans the input text by removing special characters and extra whitespace.
     - split_into_chunks(text, chunk_size, overlap_percentage): Splits the input text into smaller chunks.
+    - text_to_html(text): Transforms summarized text into a browser-readable HTML format.
 
     Usage:
     This class can be used in different scripts to standardize interactions with the GPT model and handle common tasks efficiently.
@@ -307,14 +308,17 @@ class GPTCommons:
         # Clean the input text
         text = self.clean_text(text)
 
+        # Calculate the optimal chunk size
+        optimal_chunk_size = int(chunk_size * 0.8)
+
         # Calculate the number of overlapping characters
-        overlap_chars = int(chunk_size * overlap_percentage)
+        overlap_chars = int(optimal_chunk_size * overlap_percentage)
 
         # Initialize a list to store the chunks
         chunks = []
 
         # Loop through the text with the overlap
-        for i in range(0, len(text), chunk_size - overlap_chars):
+        for i in range(0, len(text), optimal_chunk_size - overlap_chars):
             # Determine the end index of the current chunk
             end_idx = i + chunk_size
 
@@ -325,3 +329,61 @@ class GPTCommons:
             chunks.append(chunk)
 
         return chunks
+
+    def text_to_html(self, text) -> str:
+        """
+        Transforms summarized text into a browser-readable HTML format.
+
+        Args:
+        text (str): The summarized text to be transformed.
+
+        Returns:
+        str: The HTML formatted text.
+        """
+        # Convert bullet points
+        text = re.sub(r'^\s*-\s*(.*)', r'<li>\1</li>', text, flags=re.MULTILINE)
+        text = re.sub(r'(<li>.*</li>)', r'<ul>\1</ul>', text, flags=re.DOTALL)
+
+        # Convert headers
+        text = re.sub(r'^\s*#\s*(.*)', r'<h1>\1</h1>', text, flags=re.MULTILINE)
+        text = re.sub(r'^\s*##\s*(.*)', r'<h2>\1</h2>', text, flags=re.MULTILINE)
+        text = re.sub(r'^\s*###\s*(.*)', r'<h3>\1</h3>', text, flags=re.MULTILINE)
+
+        # Convert newlines to paragraphs
+        paragraphs = text.split('\n\n')
+        paragraphs = [f'<p>{p}</p>' for p in paragraphs if p.strip()]
+        html = ''.join(paragraphs)
+
+        return f"<html><body>{html}</body></html>"
+    
+    def write_summary_to_file(self, response, output_file, to_html):
+        """
+        Writes the summary to a file, optionally converting it to HTML format.
+    
+        Args:
+        response (str): The summarized text to be written to the file.
+        output_file (str): The path to the file where the summary should be written.
+        to_html (bool): Whether to convert the summary to HTML format.
+    
+        Returns:
+        None
+        """
+        if to_html:
+            print("Converting summary to HTML format...")
+            response = self.text_to_html(response)
+            correct_suffix = '.html'
+        else:
+            correct_suffix = '.txt'
+    
+        if output_file:
+            # Remove any existing suffix
+            output_file = re.sub(r'\.\w+$', '', output_file)
+            # Append the correct suffix
+            output_file = f"{output_file}{correct_suffix}"
+            print(f"Writing summary to output file: {output_file}")
+            with open(output_file, 'w') as f:
+                f.write(response)
+            print("Summary written to file successfully.")
+        else:
+            print("Summary generation complete. Here is the summarized text:")
+            print(response)
