@@ -3,8 +3,11 @@ import string
 import sys
 import tiktoken
 import tomli
+import requests
 
 from openai import OpenAI
+
+MODEL_URL = "https://api.openai.com/v1/models"
 
 class GPTCommons:
     """
@@ -191,8 +194,11 @@ class GPTCommons:
             raise ValueError("max_tokens must be an integer.")
 
         # Initialize the tokenizer for the specified model
-        tokenizer = tiktoken.encoding_for_model(self.get_gptmodel())
-
+        try:
+            tokenizer = tiktoken.encoding_for_model(self.get_gptmodel())
+        except Exception as e:
+            tokenizer = tiktoken.get_encoding("cl100k_base")
+       
         # Tokenize the input text
         tokens = tokenizer.encode(text)
 
@@ -349,6 +355,9 @@ class GPTCommons:
         text = re.sub(r'^\s*##\s*(.*)', r'<h2>\1</h2>', text, flags=re.MULTILINE)
         text = re.sub(r'^\s*###\s*(.*)', r'<h3>\1</h3>', text, flags=re.MULTILINE)
 
+        # Convert text in **text** into level 2 headlines
+        text = re.sub(r'\*\*(.*?)\*\*', r'<h2>\1</h2>', text)
+
         # Convert newlines to paragraphs
         paragraphs = text.split('\n\n')
         paragraphs = [f'<p>{p}</p>' for p in paragraphs if p.strip()]
@@ -387,3 +396,39 @@ class GPTCommons:
         else:
             print("Summary generation complete. Here is the summarized text:")
             print(response)
+    
+    def is_valid_gpt_model(self, model_name):
+        """
+        Checks if the provided GPT model name is valid for the chat completion API by querying the OpenAI API.
+    
+        Args:
+        model_name (str): The name of the GPT model to check.
+    
+        Returns:
+        bool: True if the model is valid, False otherwise. If an error occurs, prints the error and available models, and returns False.
+        """
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.get_api_key()}"
+            }
+
+            response = requests.get(MODEL_URL, headers=headers)
+            if response.status_code != 200:
+                print(f"Failed to fetch models: {response.status_code} - {response.text}")
+                return False
+
+            response_data = response.json()
+            valid_models = [model['id'] for model in response_data['data']]
+
+            if model_name not in valid_models:
+                print(f"Invalid model name: {model_name}")
+                print("Available models:")
+                for model in response_data["data"]:
+                    print(model["id"])
+                return False
+
+            return True
+
+        except Exception as e:
+            print(f"An error occurred while fetching models: {e}")
+            return False
