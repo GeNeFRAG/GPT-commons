@@ -15,6 +15,7 @@ GPTCommons is a Python utility class designed to facilitate common operations wi
 - openai
 - tiktoken
 - tomli
+- re
 
 ## Installation
 
