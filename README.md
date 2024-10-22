@@ -1,3 +1,22 @@
-# GPT_commons
+# GPTCommons
 
-A Python module which contains some helper functions to process large texts with ChatGPT.
+GPTCommons is a Python utility class designed to facilitate common operations with the GPT model. It provides various methods to interact with the GPT model, including generating chat completions, handling command-line arguments dynamically, and managing model configurations such as temperature and model type.
+
+## Features
+- **Chat Completions**: Generate chat completions based on provided prompts.
+- **Command-Line Argument Handling**: Dynamically retrieve command-line arguments.
+- **Model Configuration Management**: Manage configurations such as temperature and model type.
+- **Text Splitting**: Split large texts into manageable chunks.
+- **Text Cleaning**: Clean input text by removing special characters and extra whitespace.
+- **HTML Conversion**: Transform summarized text into a browser-readable HTML format.
+
+## Requirements
+- Python 3
+- openai
+- tiktoken
+- tomli
+
+## Installation
+To install the required packages, use:
+
+`pip install openai tiktoken tomli`
