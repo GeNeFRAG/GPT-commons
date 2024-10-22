@@ -1,4 +1,3 @@
-re
 tiktoken
 tomli
 requests
