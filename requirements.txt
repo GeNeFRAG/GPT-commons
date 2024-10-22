@@ -1,0 +1,5 @@
+re
+tiktoken
+tomli
+requests
+openai

@@ -17,6 +17,7 @@ GPTCommons is a Python utility class designed to facilitate common operations wi
 - tomli
 
 ## Installation
-To install the required packages, use:
 
-`pip install openai tiktoken tomli`
+To install the dependencies listed in the requirements.txt file, you can use the following command:
+
+`pip install -r requirements.txt`
