@@ -4,6 +4,7 @@ import sys
 import tiktoken
 import tomli
 import requests
+import markdown2
 
 from openai import OpenAI
 
@@ -335,17 +336,41 @@ class GPTCommons:
             chunks.append(chunk)
 
         return chunks
+    
+    def markdown_to_html(self, text) -> str:
+        """
+        Converts markdown-formatted text to HTML using the markdown library.
+
+        Args:
+        text (str): The Markdown text to convert.
+
+        Returns:
+        str: The converted HTML text.
+        """
+        html = markdown2.markdown(text)
+        return html
 
     def text_to_html(self, text) -> str:
         """
         Transforms summarized text into a browser-readable HTML format.
 
+        This function converts the input text into HTML format. If the model is GPT-4, it first converts markdown to HTML. 
+        Otherwise, it performs the following transformations:
+        - Converts bullet points (lines starting with '-') into HTML list items (`<li>`) and wraps them in unordered lists (`<ul>`).
+        - Converts headers (lines starting with '#', '##', '###') into HTML header tags (`<h1>`, `<h2>`, `<h3>`).
+        - Converts paragraphs (separated by double newlines) into HTML paragraph tags (`<p>`).
+
         Args:
         text (str): The summarized text to be transformed.
 
         Returns:
-        str: The HTML formatted text.
+        str: The HTML formatted text wrapped in `<html>` and `<body>` tags.
         """
+
+        # Convert markdown to HTML if the model is GPT-4
+        if(self.get_gptmodel().startswith("gpt-4")):
+            return self.markdown_to_html(text)
+
         # Convert bullet points
         text = re.sub(r'^\s*-\s*(.*)', r'<li>\1</li>', text, flags=re.MULTILINE)
         text = re.sub(r'(<li>.*</li>)', r'<ul>\1</ul>', text, flags=re.DOTALL)
@@ -354,9 +379,6 @@ class GPTCommons:
         text = re.sub(r'^\s*#\s*(.*)', r'<h1>\1</h1>', text, flags=re.MULTILINE)
         text = re.sub(r'^\s*##\s*(.*)', r'<h2>\1</h2>', text, flags=re.MULTILINE)
         text = re.sub(r'^\s*###\s*(.*)', r'<h3>\1</h3>', text, flags=re.MULTILINE)
-
-        # Convert text in **text** into level 2 headlines
-        text = re.sub(r'\*\*(.*?)\*\*', r'<h2>\1</h2>', text)
 
         # Convert newlines to paragraphs
         paragraphs = text.split('\n\n')
