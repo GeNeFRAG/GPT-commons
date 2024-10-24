@@ -436,7 +436,7 @@ class GPTCommons:
 
             response = requests.get(MODEL_URL, headers=headers)
             if response.status_code != 200:
-                print(f"Failed to fetch models: {response.status_code} - {response.text}")
+                print(f"Failed to fetch models: {response.status_code}")
                 return False
 
             response_data = response.json()
